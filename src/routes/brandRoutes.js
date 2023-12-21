@@ -1,23 +1,25 @@
 const express = require('express');
+const controller = require('../controllers/brandController.js');
+const DB = require('../database/index');
 
 const router = express.Router();
 
-router.get('/brands', (req, res) => {
-  return res.send('Lista de marcas')
+router.get('/', async (req, res) => {
+  return res.send(await controller.listarTodos())
 });
 
-router.get('/brands/:id', (req, res) => {
-  return res.send('Lista uma marca')
+router.get('/:id', (req, res) => {
+  return res.send(`Lista uma marca: ${req.params.id}`)
 });
 
-router.post('/brands', (req, res) => {
-  return res.send('Cria uma marca');
+router.post('/', (req, res) => {
+  return res.send(`Cria uma marca: ${req.body}`);
 });
-router.post('/brands/:id', (req, res) => {
+router.post('/:id', (req, res) => {
   return res.send('Edita uma marca');
 });
 
-router.delete('/brands/:id', (req, res) => {
+router.delete('/:id', (req, res) => {
   return res.send('Deleta uma marca');
 });
 
