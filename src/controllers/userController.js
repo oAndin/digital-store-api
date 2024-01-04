@@ -1,3 +1,4 @@
+
 const DB = require('../database/index');
 
 const tabela = 'users';
