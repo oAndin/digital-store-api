@@ -6,6 +6,4 @@ async function listarTodos() {
   return await DB.execute(`SELECT * FROM ${tabela}`);
 }
 
-modelue.exports = {
-  listarTodos
-}
+module.exports = { listarTodos }

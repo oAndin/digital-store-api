@@ -9,7 +9,8 @@ const port = 8000;
 app.use(cors());
 app.use(express.json());
 
-const brandRoutes = require('./src/routes/brandRoutes')
+const brandRoutes = require('./src/routes/brandRoutes');
+const userRoutes = require('./src/routes/userRoutes');
 
 app.get('/', (req, res) => {
   return res.send('Olá mundo!');
@@ -20,7 +21,7 @@ app.get('/docs', (req, res) => {
 });
 
 app.use('/brands', brandRoutes);
-
+app.use('/users', userRoutes);
 
 app.all('*', (req, res) => {
   return res.send(JSON.stringify({
