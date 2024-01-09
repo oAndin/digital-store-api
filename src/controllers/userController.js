@@ -3,6 +3,9 @@ const DB = require('../database/index');
 
 const tabela = 'users';
 
+const jwt = require('jsonwebtoken');
+
+
 async function create(data) {
   try {
     if (!data.user_name || data.user_name === '') {
@@ -32,6 +35,39 @@ async function create(data) {
   // return await DB.insertInto(tabela, data);
 };
 
+async function login(data) {
+  try {
+    if (!data.user_email || data.user_email === '') {
+      throw new Error("O e-mail é necessário");
+    }
+    if (!data.user_password || data.user_password === '') {
+      throw new Error("A senha é necessário");
+    }
+    const result = await DB.execute(`SELECT * FROM ${tabela} WHERE user_email = '${data.user_email}' AND user_password = '${data.user_passowrd}';`);
+
+    if (result.length == 0) {
+      return {
+        message: 'E-mail ou senha incorretos'
+      }
+    }
+
+    const token = jwt.sign({ user_id: result[0].user_id },
+      'digital-store-ap', {
+      expiresIn: "1h"
+    });
+    await DB.execute(`UPDATE ${tabela} SET token = '${token}' WHERE user_id = ${result[0].user_id};`)
+    return {
+      token
+    }
+  }
+  catch (error) {
+    return {
+      message: error.message
+    };
+  };
+};
+
 module.exports = {
-  create
+  create,
+  login
 };
