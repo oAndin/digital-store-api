@@ -5,6 +5,8 @@ const tabela = 'users';
 
 const jwt = require('jsonwebtoken');
 
+const bycrypt = require('bcrypt');
+
 
 async function create(data) {
   try {
@@ -17,22 +19,29 @@ async function create(data) {
     if (!data.user_password || data.user_password === '') {
       throw new Error('Senha de usuário é obrigatório!')
     }
-    // Codigo 
     const existeUsuario = await DB.execute(`SELECT * FROM users WHERE user_email = '${data.user_email}';`);
     if (existeUsuario.length > 0) {
       throw new Error('E-mail já cadastrado!');
     }
   }
+
   catch (error) {
     return {
       message: error.message
     }
   }
-  await DB.execute(`INSERT INTO ${tabela} (user_name, user_email, user_password) VALUES ('${data.user_name}' , '${data.user_email}' , '${data.user_passowrd}' );`);
+
+  bycrypt.hash(data.user_passowrd, 10, async (error, hash) => {
+    if (error) {
+      throw new Error('Problema ao criptografar a senha');
+    }
+
+    await DB.execute(`INSERT INTO ${tabela} (user_name, user_email, user_password) VALUES ('${data.user_name}' , '${data.user_email}' , '${hash}');`);
+
+  })
   return {
     message: 'Usuário criado com sucesso'
   }
-  // return await DB.insertInto(tabela, data);
 };
 
 async function login(data) {
@@ -51,8 +60,20 @@ async function login(data) {
       }
     }
 
+    bycrypt.compare(data.user_passowrd, result[0].user_password, async function (error, result) {
+      if (error || !result) {
+        return { message: 'E-mail ou senha incorretos' }
+      }
+      if (result) {
+        token = jwt.sign({ user_id: result[0] }, 'digital-store-api', {
+          expiresIn: '1h'
+        });
+        await DB.execute(`UPDATE ${tabela} SET token = '${token} WHERE user_id =${result[0].user_id};`);
+      };
+    });
+
     const token = jwt.sign({ user_id: result[0].user_id },
-      'digital-store-ap', {
+      'digital-store-api', {
       expiresIn: "1h"
     });
     await DB.execute(`UPDATE ${tabela} SET token = '${token}' WHERE user_id = ${result[0].user_id};`)

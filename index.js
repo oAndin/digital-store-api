@@ -6,6 +6,10 @@ const app = express();
 
 const port = 8000;
 
+const jwt = require('jsonwebtoken');
+
+const bcrypt = require('bcrypt');
+
 app.use(cors());
 app.use(express.json());
 
@@ -20,8 +24,22 @@ app.get('/docs', (req, res) => {
   return res.send('Documentação da aplicação');
 });
 
-app.use('/brands', brandRoutes);
+
+
 app.use('/users', userRoutes);
+app.use((req, res, next) => {
+  if (!req.headers.authorization) {
+    return res.send('Token necessário');
+  }
+
+  jwt.verify(req.headers.authorization.split(' ')[1], 'digital-store-api', (error) => {
+    if (error) {
+      return res.send('Token expirado');
+    }
+    next();
+  })
+});
+app.use('/brands', brandRoutes);
 
 app.all('*', (req, res) => {
   return res.send(JSON.stringify({
