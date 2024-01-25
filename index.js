@@ -24,8 +24,6 @@ app.get('/docs', (req, res) => {
   return res.send('Documentação da aplicação');
 });
 
-
-
 app.use('/users', userRoutes);
 app.use((req, res, next) => {
   if (!req.headers.authorization) {

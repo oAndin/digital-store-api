@@ -5,8 +5,12 @@ const tabela = 'users';
 
 const jwt = require('jsonwebtoken');
 
-const bycrypt = require('bcrypt');
+const bcrypt = require('bcrypt');
 
+
+async function listAll() {
+  return await DB.execute(`SELECT user_id, user_name, user_email FROM ${tabela};`);
+}
 
 async function create(data) {
   try {
@@ -23,72 +27,96 @@ async function create(data) {
     if (existeUsuario.length > 0) {
       throw new Error('E-mail já cadastrado!');
     }
-  }
 
-  catch (error) {
+    bcrypt.hash(data.user_password, 10, async (error, hash) => {
+      if (error) {
+        return hash;
+      }
+
+      await DB.execute(`INSERT INTO ${tabela} (user_name, user_email, user_password) VALUES ('${data.user_name}' , '${data.user_email}' , '${hash}');`);
+
+    })
+    return {
+      message: 'Usuário criado com sucesso'
+    }
+  } catch (error) {
     return {
       message: error.message
     }
   }
 
-  bycrypt.hash(data.user_passowrd, 10, async (error, hash) => {
-    if (error) {
-      throw new Error('Problema ao criptografar a senha');
-    }
 
-    await DB.execute(`INSERT INTO ${tabela} (user_name, user_email, user_password) VALUES ('${data.user_name}' , '${data.user_email}' , '${hash}');`);
-
-  })
-  return {
-    message: 'Usuário criado com sucesso'
-  }
 };
 
 async function login(data) {
   try {
     if (!data.user_email || data.user_email === '') {
-      throw new Error("O e-mail é necessário");
+      throw new Error('Email obrigatório');
     }
+
     if (!data.user_password || data.user_password === '') {
-      throw new Error("A senha é necessário");
+      throw new Error('Senha obrigatória');
     }
-    const result = await DB.execute(`SELECT * FROM ${tabela} WHERE user_email = '${data.user_email}' AND user_password = '${data.user_passowrd}';`);
 
-    if (result.length == 0) {
+    const result = await DB.execute(`SELECT * FROM ${tabela} WHERE user_email = '${data.user_email}';`);
+
+    if (result.length === 0) {
       return {
-        message: 'E-mail ou senha incorretos'
+        message: 'Email ou senha incorretos'
       }
     }
 
-    bycrypt.compare(data.user_passowrd, result[0].user_password, async function (error, result) {
-      if (error || !result) {
-        return { message: 'E-mail ou senha incorretos' }
-      }
-      if (result) {
-        token = jwt.sign({ user_id: result[0] }, 'digital-store-api', {
-          expiresIn: '1h'
-        });
-        await DB.execute(`UPDATE ${tabela} SET token = '${token} WHERE user_id =${result[0].user_id};`);
-      };
-    });
+    const response = await bcrypt.compare(data.user_password, result[0].user_password);
+    if (response) {
+      const token = jwt.sign({ user_id: result[0].user_id }, 'digital-store-api', {
+        expiresIn: '1h'
+      });
 
-    const token = jwt.sign({ user_id: result[0].user_id },
-      'digital-store-api', {
-      expiresIn: "1h"
-    });
-    await DB.execute(`UPDATE ${tabela} SET token = '${token}' WHERE user_id = ${result[0].user_id};`)
+      await DB.execute(`UPDATE ${tabela} SET token = '${token}' WHERE user_id = ${result[0].user_id};`);
+      return token;
+    }
     return {
-      token
+      message: 'Email ou senha incorretos'
     }
-  }
-  catch (error) {
+
+  } catch (error) {
     return {
       message: error.message
-    };
-  };
-};
+    }
+  }
+}
+
+async function destroy(id) {
+  try {
+
+    await DB.execute(`DELETE FROM ${tabela} WHERE user_id = ${id};`);
+    return {
+      type: 'sucess',
+      message: 'Usuário delete com sucesso!'
+    }
+
+  } catch (error) {
+    return {
+      type: 'error',
+      message: error.message
+    }
+  }
+}
+
+async function update(id) {
+  try {
+    
+  } catch (error) {
+    return {
+      type: 'error',
+      message: error.message
+    }
+  }
+}
 
 module.exports = {
   create,
-  login
+  listAll,
+  destroy,
+  login,
 };
